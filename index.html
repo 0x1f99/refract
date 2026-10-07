@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Refract: A local data transformation toolkit. Encode, decode, format, hash, and transform data entirely in your browser. No network required."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <title>Refract</title>
+
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+
+    <style>
+      .brand-svg {
+        display: block;
+      }
+
+      .op-config-panel {
+        display: none;
+        border-top: 1px solid var(--border-subtle);
+        background: var(--bg-surface);
+      }
+
+      .panel-editor-wrap {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-editor {
+        flex: 1;
+      }
+
+      #output-editor {
+        background: var(--bg-code);
+        color: var(--text-code);
+      }
+
+      .pipeline-step-remove {
+        padding: 0;
+        width: 16px;
+        height: 16px;
+      }
+
+      .sidebar-resize-handle {
+        position: absolute;
+        right: -3px;
+        top: 0;
+        bottom: 0;
+        width: 6px;
+        cursor: col-resize;
+        z-index: 10;
+      }
+
+      .toggle input:checked ~ .toggle-thumb {
+        transform: translateX(16px);
+        background: white;
+      }
+
+      .toggle input:checked + .toggle-track {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+      }
+
+      mark.search-highlight {
+        background: rgba(255, 210, 80, 0.3);
+        border-radius: 2px;
+        color: inherit;
+      }
+
+      .examples-bar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-6);
+        background: var(--bg-raised);
+        border-bottom: 1px solid var(--border-subtle);
+        overflow-x: auto;
+        min-height: 40px;
+      }
+
+      .examples-label {
+        font-size: var(--text-xs);
+        font-weight: var(--weight-semibold);
+        color: var(--text-tertiary);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
+      .example-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-1) var(--space-3);
+        background: var(--bg-overlay);
+        border: 1px solid var(--border-default);
+        border-radius: 10px;
+        font-size: var(--text-xs);
+        color: var(--text-secondary);
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition:
+          border-color var(--transition-fast),
+          background var(--transition-fast),
+          color var(--transition-fast);
+      }
+
+      .example-btn:hover {
+        border-color: var(--accent-primary);
+        background: var(--accent-softer);
+        color: var(--text-accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" role="application" aria-label="Refract data transformation toolkit">
+      <header id="header" role="banner">
+        <button
+          id="menu-btn"
+          class="btn btn-ghost btn-icon tooltip"
+          aria-label="Toggle sidebar"
+          data-tip="Sidebar"
+          title="Toggle sidebar"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect x="2" y="3" width="12" height="1.5" rx="0.75" />
+            <rect x="2" y="7.25" width="12" height="1.5" rx="0.75" />
+            <rect x="2" y="11.5" width="12" height="1.5" rx="0.75" />
+          </svg>
+        </button>
+
+        <a href="." class="brand" aria-label="Refract home">
+          <div class="brand-mark" aria-hidden="true">
+            <svg class="brand-svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M8 2L14 8L8 14"
+                stroke="white"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M2 5L7 8L2 11"
+                stroke="rgba(255,255,255,0.6)"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+          <span class="brand-wordmark">Re<span>fract</span></span>
+        </a>
+
+        <div class="header-search">
+          <button
+            class="header-search-btn"
+            id="header-search-btn"
+            aria-label="Search operations or type a command"
+            title="Search operations (Ctrl+K)"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <circle cx="6" cy="6" r="4" />
+              <path d="M10 10L12.5 12.5" stroke-linecap="round" />
+            </svg>
+            <span class="header-search-text">Search operations...</span>
+            <span class="kbd">Ctrl K</span>
+          </button>
+        </div>
+
+        <div class="header-actions">
+          <button
+            id="palette-open-btn"
+            class="btn btn-ghost btn-icon"
+            aria-label="Open command palette"
+            title="Command palette"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <circle cx="7" cy="7" r="4.5" />
+              <path d="M11 11L14 14" stroke-linecap="round" />
+            </svg>
+          </button>
+
+          <div class="divider" aria-hidden="true"></div>
+
+          <button
+            id="recipes-btn"
+            class="btn btn-ghost tooltip"
+            title="Recipes"
+            data-tip="Recipes"
+            aria-label="Recipes"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <rect x="2" y="1.5" width="10" height="11" rx="1.5" />
+              <path d="M4.5 5h5M4.5 7.5h5M4.5 10h3" />
+            </svg>
+            <span>Recipes</span>
+          </button>
+
+          <button
+            id="shortcuts-btn"
+            class="btn btn-ghost btn-icon tooltip"
+            title="Keyboard shortcuts"
+            data-tip="Shortcuts"
+            aria-label="Keyboard shortcuts"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <rect x="2" y="4" width="12" height="8" rx="1.5" />
+              <path d="M5 7.5h1M8 7.5h1M11 7.5h1M5 9.5h6" stroke-linecap="round" />
+            </svg>
+          </button>
+
+          <button
+            id="theme-btn"
+            class="btn btn-ghost btn-icon tooltip"
+            title="Toggle theme"
+            data-tip="Toggle theme"
+            aria-label="Toggle color theme"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5" />
+              <path
+                d="M8 2V1M8 15v-1M2 8H1M15 8h-1M4.05 4.05l-.7-.7M12.65 12.65l-.7-.7M4.05 11.95l-.7.7M12.65 3.35l-.7.7"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+
+          <button
+            id="settings-btn"
+            class="btn btn-ghost btn-icon tooltip"
+            title="Settings"
+            data-tip="Settings"
+            aria-label="Settings"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              aria-hidden="true"
+            >
+              <circle cx="8" cy="8" r="2.5" />
+              <path
+                d="M8 2v1.5M8 12.5V14M2 8H3.5M12.5 8H14M4.05 4.05l1.06 1.06M10.9 10.9l1.05 1.05M4.05 11.95l1.06-1.06M10.9 5.1l1.05-1.05"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main id="main" role="main">
+        <aside id="sidebar" aria-label="Operations">
+          <div class="sidebar-search">
+            <div class="sidebar-search-input-wrap">
+              <svg
+                class="sidebar-search-icon"
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <circle cx="6" cy="6" r="4" />
+                <path d="M10 10L12.5 12.5" stroke-linecap="round" />
+              </svg>
+              <input
+                type="search"
+                class="sidebar-search-input"
+                id="sidebar-search-input"
+                placeholder="Search operations..."
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="Search operations"
+              />
+            </div>
+          </div>
+
+          <div class="sidebar-tabs" role="tablist" aria-label="Operation categories">
+            <button class="sidebar-tab active" role="tab" data-tab="all" aria-selected="true">
+              All
+            </button>
+            <button class="sidebar-tab" role="tab" data-tab="favorites" aria-selected="false">
+              Starred
+            </button>
+            <button class="sidebar-tab" role="tab" data-tab="recent" aria-selected="false">
+              Recent
+            </button>
+          </div>
+
+          <div
+            class="sidebar-content"
+            id="sidebar-content"
+            role="list"
+            aria-label="Available operations"
+          ></div>
+
+          <div
+            class="sidebar-resize-handle"
+            role="separator"
+            aria-label="Resize sidebar"
+            aria-orientation="vertical"
+          ></div>
+        </aside>
+
+        <div id="sidebar-backdrop" aria-hidden="true"></div>
+
+        <div id="workspace">
+          <div id="pipeline-bar" role="toolbar" aria-label="Transformation pipeline">
+            <span class="pipeline-label" aria-hidden="true">Pipeline</span>
+            <div
+              class="pipeline-steps"
+              id="pipeline-steps"
+              role="list"
+              aria-label="Pipeline steps"
+            ></div>
+            <span class="pipeline-empty" id="pipeline-empty" aria-live="polite"
+              >Add operations from the sidebar</span
+            >
+            <div class="pipeline-actions">
+              <button
+                id="pipeline-save-btn"
+                class="btn btn-ghost tooltip"
+                title="Save recipe"
+                data-tip="Save recipe"
+                aria-label="Save pipeline as recipe"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 13 13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                >
+                  <rect x="1.5" y="1.5" width="10" height="10" rx="1" />
+                  <rect x="3.5" y="1.5" width="4" height="3.5" rx="0.5" />
+                  <rect x="3" y="7.5" width="7" height="3" rx="0.5" />
+                </svg>
+                <span>Save</span>
+              </button>
+              <button
+                id="pipeline-clear-btn"
+                class="btn btn-ghost tooltip"
+                title="Clear pipeline"
+                data-tip="Clear pipeline"
+                aria-label="Clear pipeline"
+              >
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 13 13"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M2 3.5h9M4.5 3.5V2h4v1.5M5 5.5v4M8 5.5v4M3 3.5l.5 6h6l.5-6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span>Clear</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            id="op-config-panel"
+            class="op-config-panel"
+            role="region"
+            aria-label="Operation configuration"
+          >
+            <div class="op-config-inner" id="op-config-inner"></div>
+          </div>
+
+          <div class="examples-bar" id="examples-bar" aria-label="Example workflows">
+            <span class="examples-label">Examples</span>
+            <button class="example-btn" data-example="hex-escape">Hello -> Hex Escape</button>
+            <button class="example-btn" data-example="hex">Hello -> Hex</button>
+            <button class="example-btn" data-example="base64">Text -> Base64</button>
+            <button class="example-btn" data-example="base64-decode">Base64 -> Text</button>
+            <button class="example-btn" data-example="url-decode">URL Decode</button>
+            <button class="example-btn" data-example="unicode-decode">
+              Unicode Escape -> Text
+            </button>
+            <button class="example-btn" data-example="json-format">JSON Format</button>
+            <button class="example-btn" data-example="sha256">SHA-256 Hash</button>
+            <button class="example-btn" data-example="binary">Text -> Binary</button>
+            <button class="example-btn" data-example="html-encode">HTML Encode</button>
+          </div>
+
+          <div id="io-area">
+            <section id="input-panel" aria-label="Input">
+              <div class="panel-header">
+                <span class="panel-header-label">Input</span>
+                <div
+                  class="panel-header-stats"
+                  id="input-stats"
+                  aria-live="polite"
+                  aria-atomic="true"
+                ></div>
+                <div class="panel-actions">
+                  <button
+                    id="paste-btn"
+                    class="btn btn-ghost btn-icon tooltip copy-btn-feedback"
+                    title="Paste from clipboard"
+                    data-tip="Paste"
+                    aria-label="Paste from clipboard"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <rect x="3" y="3.5" width="8" height="9" rx="1" />
+                      <path d="M5 3.5V2.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1" />
+                    </svg>
+                  </button>
+                  <button
+                    id="load-file-btn"
+                    class="btn btn-ghost btn-icon tooltip"
+                    title="Load local file"
+                    data-tip="Load file"
+                    aria-label="Load local file"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2 4a1 1 0 0 1 1-1h3l1.5 1.5H11a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4z"
+                      />
+                    </svg>
+                  </button>
+                  <input
+                    type="file"
+                    id="input-file-input"
+                    style="display: none"
+                    aria-label="Select file to load"
+                  />
+                  <button
+                    id="copy-input-btn"
+                    class="btn btn-ghost btn-icon tooltip copy-btn-feedback"
+                    title="Copy input"
+                    data-tip="Copy"
+                    aria-label="Copy input"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <rect x="5" y="1.5" width="7.5" height="9" rx="1" />
+                      <rect x="1.5" y="3.5" width="7.5" height="9" rx="1" />
+                    </svg>
+                  </button>
+                  <button
+                    id="clear-input-btn"
+                    class="btn btn-ghost btn-icon tooltip"
+                    title="Clear input"
+                    data-tip="Clear"
+                    aria-label="Clear input"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 3l8 8M11 3L3 11" stroke-linecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="panel-editor-wrap" id="input-drop-zone">
+                <textarea
+                  id="input-editor"
+                  class="panel-editor word-wrap"
+                  placeholder="Paste or type data here, or drag and drop a file..."
+                  spellcheck="false"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  aria-label="Input data editor"
+                  aria-multiline="true"
+                ></textarea>
+                <div class="drag-overlay" id="input-drag-overlay" aria-hidden="true">
+                  Drop file to load
+                </div>
+              </div>
+
+              <div class="panel-footer">
+                <span
+                  class="panel-footer-info"
+                  id="input-footer"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  >0 bytes</span
+                >
+              </div>
+            </section>
+
+            <section id="output-panel" aria-label="Output">
+              <div class="panel-header">
+                <span class="panel-header-label">Output</span>
+                <div
+                  id="processing-indicator"
+                  class="processing-indicator"
+                  style="display: none"
+                  aria-live="polite"
+                >
+                  <div class="processing-spinner" aria-hidden="true"></div>
+                  Processing...
+                </div>
+                <div
+                  class="panel-header-stats"
+                  id="output-stats"
+                  aria-live="polite"
+                  aria-atomic="true"
+                ></div>
+                <div class="panel-actions">
+                  <button
+                    id="swap-btn"
+                    class="btn btn-ghost btn-icon tooltip"
+                    title="Move output to input (Ctrl+Shift+X)"
+                    data-tip="Swap"
+                    aria-label="Move output to input"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M5 3L2 6M2 6L5 9M2 6h8M9 11l3-3M12 8L9 5M12 8H4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    id="wordwrap-btn"
+                    class="btn btn-ghost btn-icon tooltip"
+                    title="Toggle word wrap (Ctrl+Shift+W)"
+                    data-tip="Word wrap"
+                    aria-label="Toggle word wrap"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M2 3.5h10M2 6.5h7a2 2 0 1 1 0 4H7m2 0l-2-2m2 2l-2 2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    id="download-output-btn"
+                    class="btn btn-ghost btn-icon tooltip"
+                    title="Download output (Ctrl+Shift+D)"
+                    data-tip="Download"
+                    aria-label="Download output as file"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M7 1v7.5M4 6l3 3 3-3M2 11h10"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    id="copy-output-btn"
+                    class="btn btn-secondary tooltip copy-btn-feedback"
+                    title="Copy output (Ctrl+Shift+C)"
+                    data-tip="Copied!"
+                    aria-label="Copy output to clipboard"
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <rect x="5" y="1.5" width="7.5" height="9" rx="1" />
+                      <rect x="1.5" y="3.5" width="7.5" height="9" rx="1" />
+                    </svg>
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div
+                id="error-display"
+                class="error-display hidden"
+                role="alert"
+                aria-live="assertive"
+              >
+                <span class="error-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                    <path
+                      fill-rule="evenodd"
+                      d="M7 0a7 7 0 1 0 0 14A7 7 0 0 0 7 0zm0 3a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 7 3zm0 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <div class="error-message" id="error-message"></div>
+                  <div class="error-recovery" id="error-recovery" style="display: none"></div>
+                </div>
+              </div>
+
+              <div class="panel-editor-wrap">
+                <textarea
+                  id="output-editor"
+                  class="panel-editor word-wrap"
+                  readonly
+                  aria-label="Output data (read only)"
+                  aria-multiline="true"
+                  aria-readonly="true"
+                  spellcheck="false"
+                ></textarea>
+              </div>
+
+              <div class="panel-footer">
+                <span
+                  class="panel-footer-info"
+                  id="output-footer"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  >0 bytes</span
+                >
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <footer class="status-bar" role="contentinfo">
+        <span class="status-item">
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 10 10"
+            fill="var(--text-success)"
+            aria-hidden="true"
+          >
+            <circle cx="5" cy="5" r="3.5" />
+          </svg>
+          <span id="status-pipeline">No pipeline</span>
+        </span>
+        <span class="status-sep" aria-hidden="true">|</span>
+        <span class="status-item" id="status-time"></span>
+        <div class="status-right">
+          <span>
+            <svg
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              fill="var(--text-success)"
+              aria-hidden="true"
+            >
+              <path d="M5 1L2 2.5v3C2 7.5 3.3 8.9 5 9.5 6.7 8.9 8 7.5 8 5.5v-3L5 1z" />
+            </svg>
+            Local only
+          </span>
+          <span id="status-privacy" aria-label="Privacy: processing is local">No network use</span>
+        </div>
+      </footer>
+    </div>
+
+    <div
+      id="palette-overlay"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-label="Command palette"
+      aria-modal="true"
+    >
+      <div class="modal palette" role="search">
+        <div class="palette-input-wrap">
+          <svg
+            class="palette-search-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            aria-hidden="true"
+          >
+            <circle cx="7" cy="7" r="4.5" />
+            <path d="M11 11L13.5 13.5" stroke-linecap="round" />
+          </svg>
+          <input
+            type="search"
+            class="palette-input"
+            id="palette-input"
+            placeholder="Search operations or commands..."
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Search operations and commands"
+            aria-autocomplete="list"
+            aria-controls="palette-results"
+          />
+        </div>
+        <div
+          class="palette-results"
+          id="palette-results"
+          role="listbox"
+          aria-label="Search results"
+        ></div>
+        <div
+          style="
+            display: flex;
+            gap: var(--space-4);
+            padding: var(--space-3) var(--space-5);
+            border-top: 1px solid var(--border-subtle);
+          "
+        >
+          <span style="font-size: var(--text-xs); color: var(--text-tertiary)">
+            <kbd class="kbd">Enter</kbd> confirm
+            <kbd class="kbd" style="margin-left: var(--space-3)">Esc</kbd>
+            close
+            <kbd class="kbd" style="margin-left: var(--space-3)">Arrow keys</kbd>
+            navigate
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="shortcuts-overlay"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-label="Keyboard shortcuts"
+      aria-modal="true"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Keyboard Shortcuts</span>
+          <button class="modal-close" aria-label="Close keyboard shortcuts">&#x2715;</button>
+        </div>
+        <div class="modal-body">
+          <div class="shortcuts-grid">
+            <div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Command palette</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Ctrl</kbd><kbd class="kbd">K</kbd></span
+                >
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Run pipeline</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Enter</kbd></span
+                >
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Copy output</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Shift</kbd
+                  ><kbd class="kbd">C</kbd></span
+                >
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Paste to input</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Shift</kbd
+                  ><kbd class="kbd">V</kbd></span
+                >
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Swap input/output</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Shift</kbd
+                  ><kbd class="kbd">X</kbd></span
+                >
+              </div>
+            </div>
+            <div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Toggle word wrap</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Shift</kbd
+                  ><kbd class="kbd">W</kbd></span
+                >
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Download output</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Ctrl</kbd><kbd class="kbd">Shift</kbd
+                  ><kbd class="kbd">D</kbd></span
+                >
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Close dialogs</span
+                ><span class="shortcut-keys"><kbd class="kbd">Esc</kbd></span>
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Navigate palette</span
+                ><span class="shortcut-keys"
+                  ><kbd class="kbd">Up</kbd><kbd class="kbd">Down</kbd></span
+                >
+              </div>
+              <div class="shortcut-row">
+                <span class="shortcut-desc">Mac: use Cmd instead of Ctrl</span
+                ><span class="shortcut-keys"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="settings-overlay"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-label="Settings"
+      aria-modal="true"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Settings</span>
+          <button class="modal-close" aria-label="Close settings">&#x2715;</button>
+        </div>
+        <div class="modal-body" id="settings-body"></div>
+      </div>
+    </div>
+
+    <div
+      id="recipes-overlay"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-label="Recipes"
+      aria-modal="true"
+    >
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Recipes</span>
+          <button class="modal-close" aria-label="Close recipes">&#x2715;</button>
+        </div>
+        <div class="modal-body" id="recipes-body"></div>
+      </div>
+    </div>
+
+    <div
+      id="notification"
+      class="notification"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <script src="js/operations.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/pipeline.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

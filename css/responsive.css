@@ -1,0 +1,132 @@
+@media (max-width: 1100px) {
+  #sidebar {
+    width: 220px;
+  }
+}
+
+@media (max-width: 860px) {
+  #sidebar {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    bottom: 26px;
+    width: 280px;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform var(--transition-slow);
+    box-shadow: var(--shadow-lg);
+  }
+
+  #sidebar.open {
+    transform: translateX(0);
+  }
+
+  #sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 199;
+    display: none;
+  }
+
+  #sidebar-backdrop.visible {
+    display: block;
+  }
+
+  #menu-btn {
+    display: flex !important;
+  }
+
+  #io-area {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  #input-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .header-search {
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 700px) {
+  .examples-bar {
+    padding: var(--space-2) var(--space-4);
+  }
+  .examples-label {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  #header {
+    padding: 0 var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .brand-wordmark {
+    display: none;
+  }
+
+  .header-search {
+    max-width: 160px;
+  }
+
+  .panel-header-stats {
+    display: none;
+  }
+
+  .op-config-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal {
+    max-height: calc(100vh - 80px);
+  }
+
+  .modal-overlay {
+    padding-top: 40px;
+    align-items: flex-end;
+    padding-top: 0;
+  }
+
+  .modal {
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 85vh;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .shortcuts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #pipeline-bar {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .status-bar {
+    padding: 0 var(--space-4);
+  }
+}
+
+@media (max-width: 400px) {
+  .header-search {
+    display: none;
+  }
+
+  #palette-open-btn {
+    display: flex !important;
+  }
+}
+
+#menu-btn {
+  display: none;
+}
+
+#palette-open-btn {
+  display: none;
+}
